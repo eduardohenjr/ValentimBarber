@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Agendamento de Clientes
 
 Este projeto é uma aplicação para agendamento de clientes, que inclui um backend em TypeScript utilizando Express e um frontend em React. O objetivo é permitir o gerenciamento de informações de clientes, incluindo a criação, leitura, atualização e exclusão de dados.
@@ -62,3 +63,7 @@ Contribuições são bem-vindas! Sinta-se à vontade para abrir issues ou pull r
 ## Licença
 
 Este projeto está licenciado sob a MIT License.
+=======
+# ValentimBarber
+ValentimBarber é um site elaborado para controle de agendamento de clientes feito para um autônomo. Desenvolvido com React, este site permite que os clientes consigam agendar e ter o controle visual de horários.
+>>>>>>> 7286e2ff52dd4b87ba3fca4e848e6b054e767b39
