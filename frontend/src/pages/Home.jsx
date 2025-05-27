@@ -1,17 +1,20 @@
 import gsap from "gsap";
-import React, { useMemo, useRef, useEffect } from "react";
+import React, { useMemo, useRef, useEffect, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import * as THREE from "three";
+import { useNavigate } from "react-router-dom";
 import "./home.css";
 
 export default function HomePage() {
-  const [fogo, setFogo] = React.useState(false);
-  const motoRef = useRef<HTMLDivElement>(null);
-  const rodaTraseiraRef = useRef<SVGGElement>(null);
-  const rodaDianteiraRef = useRef<SVGGElement>(null);
+  const [fogo, setFogo] = useState(false);
+  const [showScissor, setShowScissor] = useState(false);
+  const motoRef = useRef(null);
+  const rodaTraseiraRef = useRef(null);
+  const rodaDianteiraRef = useRef(null);
+  const navigate = useNavigate();
 
   // Função para empinar a moto ao passar o mouse
-  function handleMotoHover(empinar: boolean) {
+  function handleMotoHover(empinar) {
     if (motoRef.current) {
       gsap.to(motoRef.current, {
         rotateZ: empinar ? -18 : 0,
@@ -25,7 +28,7 @@ export default function HomePage() {
   }
 
   useEffect(() => {
-    let rafId: number;
+    let rafId;
     const distancia = 40;
     const isMobile = window.innerWidth <= 600;
     const cenaWidth = isMobile ? window.innerWidth : 220;
@@ -34,9 +37,9 @@ export default function HomePage() {
     const endX = cenaWidth;
     const duracao = 4;
 
-    let startTime: number | null = null;
+    let startTime = null;
 
-    const animate = (now: number) => {
+    const animate = (now) => {
       if (!startTime) startTime = now;
       const elapsed = ((now - startTime) / 1000) % duracao;
       const progress = elapsed / duracao;
@@ -47,9 +50,8 @@ export default function HomePage() {
       }
 
       // Efeito de rotação das rodas
-      const velocidade = 2 * Math.PI * ((endX - startX) / duracao); // px/s
-      const raioTraseira = 18; // raio da roda traseira em px
-      const raioDianteira = 16; // raio da roda dianteira em px
+      const raioTraseira = 18;
+      const raioDianteira = 16;
       const anguloTraseira = ((x / (2 * Math.PI * raioTraseira)) * 360) % 360;
       const anguloDianteira = ((x / (2 * Math.PI * raioDianteira)) * 360) % 360;
 
@@ -78,19 +80,75 @@ export default function HomePage() {
     };
   }, []);
 
+  function handleCadastrarClick() {
+    setShowScissor(true);
+    setTimeout(() => {
+      navigate("/register", { replace: false });
+    }, 1200); // tempo da animação
+  }
+
   return (
     <>
       <style>
         {`
           .bonequinho-moto g {
-            /* Não sobrescreva transform das rodas */
             transform: unset !important;
+          }
+          .scissor-transition-overlay {
+            position: fixed;
+            left: 0; right: 0; bottom: 0; top: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 9999;
+            pointer-events: none;
+            overflow: hidden;
+          }
+          .scissor-blade {
+            position: absolute;
+            top: 0;
+            height: 100vh;
+            width: 50vw;
+            transition: clip-path 1s cubic-bezier(.77,0,.18,1);
+            will-change: clip-path;
+          }
+          .scissor-blade-left {
+            left: 0;
+            clip-path: polygon(100% 0, 100% 100%, 100% 100%, 100% 0);
+            background: #181818;
+          }
+          .scissor-blade-right {
+            right: 0;
+            clip-path: polygon(0 0, 0 100%, 0 100%, 0 0);
+            background: #181818;
+          }
+          .scissor-animate .scissor-blade-left {
+            clip-path: polygon(0 0, 0 100%, 100% 100%, 100% 0);
+            transition: clip-path 1s cubic-bezier(.77,0,.18,1);
+          }
+          .scissor-animate .scissor-blade-right {
+            clip-path: polygon(0 0, 0 100%, 100% 100%, 100% 0);
+            transition: clip-path 1s cubic-bezier(.77,0,.18,1);
+          }
+          .scissor-svg {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%) rotate(90deg);
+            width: 120px;
+            height: 120px;
+            z-index: 10000;
+            animation: scissor-move-side 1s cubic-bezier(.77,0,.18,1) forwards;
+          }
+          @keyframes scissor-move-side {
+            0% { left: 50%; }
+            80% { left: 50%; }
+            100% { left: 50%; }
           }
         `}
       </style>
       <div className="home">
         <header>
-          <img src="/logo.png" alt="Valentim Barbearia" />
+          <img src="/logo.png" alt="Valentim Barbearia" className="logo-img" />
         </header>
         <main>
           <div className="bonequinhos-area">
@@ -110,34 +168,29 @@ export default function HomePage() {
                 {/* SVG de uma moto estilo motoclube (chopper) */}
                 <svg width="140" height="80" viewBox="0 0 140 80">
                   <defs>
-                    {/* Gradiente para o pneu */}
+                    {/* Gradientes */}
                     <radialGradient id="pneuGrad" cx="50%" cy="50%" r="50%">
                       <stop offset="0%" stopColor="#222"/>
                       <stop offset="80%" stopColor="#111"/>
                       <stop offset="100%" stopColor="#000"/>
                     </radialGradient>
-                    {/* Gradiente para o aro */}
                     <linearGradient id="aroGrad" x1="0" y1="0" x2="1" y2="1">
                       <stop offset="0%" stopColor="#fff" stopOpacity="0.7"/>
                       <stop offset="50%" stopColor="#b0b0b0"/>
                       <stop offset="100%" stopColor="#888"/>
                     </linearGradient>
-                    {/* Gradiente para o centro da roda */}
                     <radialGradient id="centroRodaGrad" cx="50%" cy="50%" r="50%">
                       <stop offset="0%" stopColor="#444"/>
                       <stop offset="100%" stopColor="#111"/>
                     </radialGradient>
-                    {/* Gradiente para o quadro */}
                     <linearGradient id="quadroGrad" x1="0" y1="0" x2="1" y2="1">
                       <stop offset="0%" stopColor="#232323"/>
                       <stop offset="100%" stopColor="#444"/>
                     </linearGradient>
-                    {/* Gradiente para o banco */}
                     <linearGradient id="bancoGrad" x1="0" y1="0" x2="1" y2="1">
                       <stop offset="0%" stopColor="#232323"/>
                       <stop offset="100%" stopColor="#666"/>
                     </linearGradient>
-                    {/* Gradiente para o tanque (mantém o antigo) */}
                     <linearGradient id="tankGradient" x1="60" y1="30" x2="100" y2="50" gradientUnits="userSpaceOnUse">
                       <stop offset="0%" stopColor="#b0b0b0"/>
                       <stop offset="60%" stopColor="#232323"/>
@@ -146,11 +199,9 @@ export default function HomePage() {
                   </defs>
                   {/* Sombra */}
                   <ellipse cx="70" cy="75" rx="45" ry="8" fill="#000" opacity="0.18"/>
-                  {/* Roda traseira grande */}
+                  {/* Roda traseira */}
                   <g ref={rodaTraseiraRef}>
-                    {/* Pneu com gradiente */}
                     <circle cx="35" cy="60" r="18" fill="url(#pneuGrad)" stroke="url(#aroGrad)" strokeWidth="5"/>
-                    {/* Detalhe de pneu (sulcos) */}
                     {[...Array(12)].map((_, i) => (
                       <rect
                         key={i}
@@ -164,16 +215,12 @@ export default function HomePage() {
                         transform={`rotate(${i * 30} 35 60)`}
                       />
                     ))}
-                    {/* Centro da roda com gradiente */}
                     <circle cx="35" cy="60" r="9" fill="url(#centroRodaGrad)" stroke="#222" strokeWidth="2"/>
-                    {/* Reflexo cromado no aro */}
                     <ellipse cx="35" cy="60" rx="15" ry="15" fill="none" stroke="#fff" strokeWidth="1.2" opacity="0.18"/>
                   </g>
-                  {/* Roda dianteira grande e avançada */}
+                  {/* Roda dianteira */}
                   <g ref={rodaDianteiraRef}>
-                    {/* Pneu com gradiente */}
                     <circle cx="115" cy="60" r="16" fill="url(#pneuGrad)" stroke="url(#aroGrad)" strokeWidth="5"/>
-                    {/* Detalhe de pneu (sulcos) */}
                     {[...Array(12)].map((_, i) => (
                       <rect
                         key={100 + i}
@@ -187,38 +234,25 @@ export default function HomePage() {
                         transform={`rotate(${i * 30} 115 60)`}
                       />
                     ))}
-                    {/* Centro da roda com gradiente */}
                     <circle cx="115" cy="60" r="7" fill="url(#centroRodaGrad)" stroke="#222" strokeWidth="2"/>
-                    {/* Reflexo cromado no aro */}
                     <ellipse cx="115" cy="60" rx="13" ry="13" fill="none" stroke="#fff" strokeWidth="1" opacity="0.18"/>
                   </g>
-                  {/* Garfo dianteiro longo */}
+                  {/* Outros elementos da moto */}
                   <rect x="110" y="30" width="5" height="35" rx="2.5" fill="#b0b0b0" stroke="#888" strokeWidth="1.5" transform="rotate(-18 112.5 47.5)"/>
-                  {/* Garfo traseiro */}
                   <rect x="33" y="45" width="5" height="20" rx="2.5" fill="#b0b0b0" stroke="#888" strokeWidth="1.5" transform="rotate(18 35.5 55)"/>
-                  {/* Quadro principal robusto com gradiente */}
                   <rect x="45" y="48" width="55" height="10" rx="5" fill="url(#quadroGrad)" stroke="#b0b0b0" strokeWidth="3"/>
-                  {/* Tanque de combustível grande (prata com preto) */}
                   <ellipse cx="80" cy="40" rx="20" ry="10" fill="url(#tankGradient)" stroke="#b0b0b0" strokeWidth="2"/>
-                  {/* Faixa no tanque */}
                   <rect x="75" y="32" width="10" height="16" rx="5" fill="#b0b0b0" opacity="0.18"/>
-                  {/* Banco baixo e largo com gradiente */}
                   <rect x="90" y="35" width="28" height="10" rx="5" fill="url(#bancoGrad)" stroke="#b0b0b0" strokeWidth="2"/>
-                  {/* Motor cromado */}
                   <ellipse cx="60" cy="58" rx="10" ry="7" fill="#b0b0b0" stroke="#fff" strokeWidth="2"/>
                   <rect x="55" y="65" width="10" height="7" rx="3.5" fill="#888" stroke="#b0b0b0" strokeWidth="1"/>
-                  {/* Escape duplo cromado */}
                   <rect x="50" y="68" width="40" height="4" rx="2" fill="#b0b0b0" stroke="#fff" strokeWidth="1.2" transform="rotate(-8 70 70)"/>
                   <rect x="55" y="72" width="38" height="3" rx="1.5" fill="#b0b0b0" stroke="#fff" strokeWidth="1" transform="rotate(-6 74 73.5)"/>
-                  {/* Guidão alto estilo "ape hanger" */}
                   <rect x="100" y="18" width="4" height="22" rx="2" fill="#b0b0b0" stroke="#fff" strokeWidth="1.2" transform="rotate(-30 102 29)"/>
                   <rect x="120" y="18" width="4" height="22" rx="2" fill="#b0b0b0" stroke="#fff" strokeWidth="1.2" transform="rotate(30 122 29)"/>
-                  {/* Farol redondo */}
                   <ellipse cx="132" cy="32" rx="7" ry="4" fill="#ffe066" stroke="#b0b0b0" strokeWidth="2"/>
-                  {/* Detalhes cromados */}
                   <ellipse cx="80" cy="40" rx="20" ry="10" fill="none" stroke="#fff" strokeWidth="1" opacity="0.13"/>
                   <ellipse cx="60" cy="58" rx="10" ry="7" fill="none" stroke="#fff" strokeWidth="0.7" opacity="0.13"/>
-                  {/* Emblema motoclube */}
                   <ellipse cx="80" cy="40" rx="5" ry="5" fill="#b0b0b0" stroke="#fff" strokeWidth="1.2" opacity="0.7"/>
                   <text x="80" y="43" textAnchor="middle" fontSize="6" fontWeight="bold" fill="#232323" fontFamily="Arial Black, Arial, sans-serif">VB</text>
                 </svg>
@@ -230,8 +264,8 @@ export default function HomePage() {
                     viewBox="0 0 40 30"
                     style={{
                       position: "absolute",
-                      left: 25,   // <-- ajuste horizontal
-                      top: 55,    // <-- ajuste vertical
+                      left: 25,
+                      top: 55,
                       pointerEvents: "none",
                       zIndex: 10,
                     }}
@@ -287,9 +321,20 @@ export default function HomePage() {
               </div>
             </div>
             <div className="agendar-area">
-           
-              <button className="agendar-btn" onClick={() => window.location.href = "https://wa.me/5511967654321"}>
-                Agendar agora
+              <button
+                className="agendar-btn"
+                onClick={handleCadastrarClick}
+                disabled={showScissor}
+              >
+                Cadastrar
+              </button>
+              <button
+                className="agendar-btn"
+                style={{ marginLeft: '0.5rem' }}
+                onClick={() => navigate("/cliente", { replace: false })}
+                disabled={showScissor}
+              >
+                Sou Cliente
               </button>
             </div>
           </div>
@@ -317,13 +362,16 @@ export default function HomePage() {
             &copy; {new Date().getFullYear()} Valentim Barbearia. Todos os direitos reservados.
           </div>
         </footer>
+        {showScissor && (
+          <ScissorTransition />
+        )}
       </div>
     </>
   );
 }
 
-function RotatingCylinder({ stripeTexture }: { stripeTexture: THREE.Texture }) {
-  const cylinderRef = useRef<THREE.Mesh>(null);
+function RotatingCylinder({ stripeTexture }) {
+  const cylinderRef = useRef(null);
 
   useFrame(() => {
     if (cylinderRef.current) {
@@ -343,18 +391,17 @@ function RotatingCylinder({ stripeTexture }: { stripeTexture: THREE.Texture }) {
   );
 }
 
-function copyToClipboard(text: string) {
+function copyToClipboard(text) {
   navigator.clipboard.writeText(text);
   alert('Copiado: ' + text);
 }
-
 
 function BarberPole3D() {
   const stripeTexture = useMemo(() => {
     const canvas = document.createElement("canvas");
     canvas.width = 64;
     canvas.height = 256;
-    const ctx = canvas.getContext("2d")!;
+    const ctx = canvas.getContext("2d");
     for (let i = 0; i < 24; i++) {
       ctx.fillStyle = i % 3 === 0 ? "#e53935" : i % 3 === 1 ? "#fff" : "#1976d2";
       ctx.save();
@@ -367,18 +414,17 @@ function BarberPole3D() {
   }, []);
 
   return (
-      <Canvas style={{ width: "100%", height: "100%" }}>
-        <ambientLight intensity={2} />
-        <directionalLight position={[0, 0, 10]} intensity={2} color="#fffbe7" />
-        <directionalLight position={[0, 10, 0]} intensity={1.5} color="#fffbe7" />
-      {/* Cilindro com textura de listras rotacionando */}
+    <Canvas style={{ width: "100%", height: "100%" }}>
+      <ambientLight intensity={2} />
+      <directionalLight position={[0, 0, 10]} intensity={2} color="#fffbe7" />
+      <directionalLight position={[0, 10, 0]} intensity={1.5} color="#fffbe7" />
       <RotatingCylinder stripeTexture={stripeTexture} />
       <mesh position={[0, 2.5, 0]}>
         <sphereGeometry args={[1.1, 32, 16]} />
         <meshPhysicalMaterial
-          color="#e0e0e0" // tom mais claro
+          color="#e0e0e0"
           metalness={1}
-          roughness={0.15} // menos rugoso, mais reflexivo
+          roughness={0.15}
           clearcoat={1}
           clearcoatRoughness={0.5}
           reflectivity={1}
@@ -390,7 +436,7 @@ function BarberPole3D() {
       <mesh position={[0, -2.5, 0]}>
         <sphereGeometry args={[1.1, 32, 16]} />
         <meshPhysicalMaterial
-          color="#b0b0b0" // tom mais escuro para a base
+          color="#b0b0b0"
           metalness={1}
           roughness={0.18}
           clearcoat={1}
@@ -402,5 +448,153 @@ function BarberPole3D() {
         />
       </mesh>
     </Canvas>
+  );
+}
+
+function ScissorTransition() {
+  // Inicia aberta e fecha depois, anima de baixo para cima
+  const [animate, setAnimate] = useState(false);
+  const [open, setOpen] = useState(true);
+  const [progress, setProgress] = useState(0); // 0 (baixo) até 1 (topo)
+  const [showRegister, setShowRegister] = useState(false);
+
+  useEffect(() => {
+    setTimeout(() => setAnimate(true), 30);
+    setTimeout(() => setOpen(false), 200); // fecha as lâminas após início
+
+    // Anima a subida da tesoura e o corte
+    let start;
+    const duration = 1000; // ms
+    function animateStep(ts) {
+      if (!start) start = ts;
+      const elapsed = ts - start;
+      let p = Math.min(elapsed / duration, 1);
+      setProgress(p);
+      if (p < 1) {
+        requestAnimationFrame(animateStep);
+      } else {
+        setShowRegister(true);
+      }
+    }
+    requestAnimationFrame(animateStep);
+  }, []);
+
+  // Calcula a posição vertical da tesoura e das lâminas
+  const scissorY = 100 - progress * 100; // de 100vh até 0vh
+  const bladeClip = progress === 0
+    ? "polygon(0 100%, 100% 100%, 100% 100%, 0 100%)"
+    : `polygon(0 ${100 - progress * 100}%, 100% ${100 - progress * 100}%, 100% 100%, 0 100%)`;
+
+  return (
+    <>
+      {showRegister && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 9998,
+            pointerEvents: "none",
+            animation: "registerReveal 0.3s linear forwards"
+          }}
+        >
+          <iframe
+            src="/register"
+            style={{
+              width: "100vw",
+              height: "100vh",
+              border: "none",
+              pointerEvents: "auto",
+              background: "#181818"
+            }}
+            title="Cadastro"
+          />
+        </div>
+      )}
+      <div className="scissor-transition-overlay" style={{zIndex: 9999}}>
+        {/* Lâmina esquerda */}
+        <div
+          className="scissor-blade scissor-blade-left"
+          style={{
+            left: 0,
+            width: "100vw",
+            height: "100vh",
+            background: "#181818",
+            clipPath: bladeClip,
+            transition: "clip-path 0s"
+          }}
+        />
+        {/* Lâmina direita (não usada, corte é central) */}
+        {/* Tesoura SVG animada subindo */}
+        <svg
+          className="scissor-svg"
+          viewBox="0 0 120 120"
+          style={{
+            left: "50%",
+            position: "absolute",
+            transform: "translateX(-50%)",
+            width: 120,
+            height: 120,
+            zIndex: 10000,
+            top: `calc(${scissorY}vh - 60px)`,
+            transition: "top 0s"
+          }}
+        >
+          {/* Tesoura com ponta para cima */}
+          <g
+            style={{
+              transformOrigin: "60px 60px",
+              transform: "rotate(0deg)"
+            }}
+          >
+            {/* Lâmina esquerda */}
+            <g
+              style={{
+                transformOrigin: "60px 60px",
+                transform: open
+                  ? "rotate(-32deg)"
+                  : "rotate(-5deg)",
+                transition: "transform 0.6s cubic-bezier(.77,0,.18,1)"
+              }}
+            >
+              <rect x="56" y="18" width="8" height="60" rx="3.5" fill="#d0d0d0" stroke="#888" strokeWidth="2" />
+              <polygon points="60,18 66,78 54,78" fill="#e0e0e0" stroke="#888" strokeWidth="2"/>
+            </g>
+            {/* Lâmina direita */}
+            <g
+              style={{
+                transformOrigin: "60px 60px",
+                transform: open
+                  ? "rotate(32deg)"
+                  : "rotate(5deg)",
+                transition: "transform 0.6s cubic-bezier(.77,0,.18,1)"
+              }}
+            >
+              <rect x="56" y="18" width="8" height="60" rx="3.5" fill="#b0b0b0" stroke="#888" strokeWidth="2" />
+              <polygon points="60,18 66,78 54,78" fill="#cccccc" stroke="#888" strokeWidth="2"/>
+            </g>
+            {/* Parafuso central */}
+            <circle cx="60" cy="60" r="7" fill="#888" stroke="#555" strokeWidth="2"/>
+            <circle cx="60" cy="60" r="3" fill="#fff" stroke="#aaa" strokeWidth="1"/>
+            {/* Cabos */}
+            <ellipse cx="38" cy="100" rx="15" ry="18" fill="#fff" stroke="#888" strokeWidth="4" />
+            <ellipse cx="82" cy="100" rx="15" ry="18" fill="#fff" stroke="#888" strokeWidth="4" />
+            {/* Detalhes dos cabos */}
+            <ellipse cx="38" cy="100" rx="7" ry="9" fill="#e0e0e0" stroke="#bbb" strokeWidth="2" />
+            <ellipse cx="82" cy="100" rx="7" ry="9" fill="#e0e0e0" stroke="#bbb" strokeWidth="2" />
+            {/* Hastes dos cabos */}
+            <rect x="57" y="70" width="6" height="30" rx="3" fill="#bbb" stroke="#888" strokeWidth="2" transform="rotate(-18 60 85)" />
+            <rect x="57" y="70" width="6" height="30" rx="3" fill="#bbb" stroke="#888" strokeWidth="2" transform="rotate(18 60 85)" />
+          </g>
+        </svg>
+      </div>
+      <style>
+        {`
+          @keyframes registerReveal {
+            from { opacity: 0; }
+            to { opacity: 1; }
+          }
+        `}
+      </style>
+    </>
   );
 }
